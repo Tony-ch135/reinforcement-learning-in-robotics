@@ -1,0 +1,132 @@
+
+目标：让机器人在4x4网格中学习从起点到终点的路径
+Here is the code
+
+import numpy as np
+import random
+
+class SimpleRobotWorld:
+    """超简化的网格世界环境"""
+    def __init__(self, size=4):
+        self.size = size
+        self.state = 0  # 起点在左上角(0,0)
+        self.goal = size * size - 1  # 终点在右下角
+        
+    def reset(self):
+        """重置环境"""
+        self.state = 0
+        return self.state
+    
+    def step(self, action):
+        """
+        执行动作
+        动作: 0=上, 1=右, 2=下, 3=左
+        """
+        row = self.state // self.size
+        col = self.state % self.size
+        
+        # 根据动作移动
+        if action == 0 and row > 0:  # 上
+            row -= 1
+        elif action == 1 and col < self.size-1:  # 右
+            col += 1
+        elif action == 2 and row < self.size-1:  # 下
+            row += 1
+        elif action == 3 and col > 0:  # 左
+            col -= 1
+        
+        new_state = row * self.size + col
+        
+        # 奖励：到达终点+10，其他-1（鼓励尽快到达）
+        reward = 10 if new_state == self.goal else -1
+        
+        # 是否结束
+        done = (new_state == self.goal)
+        
+        self.state = new_state
+        return new_state, reward, done
+
+class SimpleQLearning:
+    """最简单的Q学习算法"""
+    def __init__(self, n_states=16, n_actions=4):
+        self.q_table = np.zeros((n_states, n_actions))
+        self.learning_rate = 0.1
+        self.discount = 0.9
+        self.epsilon = 0.2  # 探索率
+        
+    def choose_action(self, state):
+        """ε-贪婪策略"""
+        if random.random() < self.epsilon:
+            return random.randint(0, 3)  # 随机探索
+        else:
+            return np.argmax(self.q_table[state])  # 利用
+    
+    def learn(self, state, action, reward, next_state):
+        """Q学习更新规则"""
+        current_q = self.q_table[state, action]
+        max_future_q = np.max(self.q_table[next_state])
+        new_q = current_q + self.learning_rate * (reward + self.discount * max_future_q - current_q)
+        self.q_table[state, action] = new_q
+
+# ===== 训练循环 =====
+def train_simple_robot():
+    """主训练函数"""
+    print("开始训练简单网格世界机器人...")
+    
+    env = SimpleRobotWorld(size=4)
+    agent = SimpleQLearning()
+    
+    # 训练100次尝试
+    for episode in range(100):
+        state = env.reset()
+        total_reward = 0
+        
+        # 每次尝试最多走50步
+        for step in range(50):
+            action = agent.choose_action(state)
+            next_state, reward, done = env.step(action)
+            agent.learn(state, action, reward, next_state)
+            
+            total_reward += reward
+            state = next_state
+            
+            if done:
+                break
+        
+        # 每10次显示一次进度
+        if episode % 10 == 0:
+            print(f"尝试 {episode}: 累计奖励 = {total_reward}")
+    
+    print("\n训练完成！")
+    print("学习到的Q表前几行：")
+    print(agent.q_table[:4])
+    
+    # 测试学习结果
+    print("\n测试学习到的策略：")
+    state = env.reset()
+    path = [state]
+    
+    for _ in range(20):
+        action = np.argmax(agent.q_table[state])
+        state, _, done = env.step(action)
+        path.append(state)
+        
+        if done:
+            print(f"成功到达终点！路径: {path}")
+            break
+    
+    return agent
+
+if __name__ == "__main__":
+    # 这是代码的入口点
+    print("=" * 50)
+    print("强化学习机器人 - 最简单实现版本")
+    print("目的：理解Q学习的基本原理")
+    print("=" * 50)
+    
+    agent = train_simple_robot()
+    
+    print("\n下一步计划：")
+    print("1. 将这个离散网格扩展到连续空间")
+    print("2. 用神经网络替代Q表（Deep Q-Learning）")
+    print("3. 在PyBullet中创建真实机器人仿真")
