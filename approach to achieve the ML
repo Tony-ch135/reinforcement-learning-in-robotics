@@ -1,12 +1,13 @@
 
 目标：让机器人在4x4网格中学习从起点到终点的路径
+our objective ：endow the robot to learn the pathway from original place to the destination，display It in a 4×4 grids。
 Here is the code
 
 import numpy as np
 import random
 
 class SimpleRobotWorld:
-    """超简化的网格世界环境"""
+    
     def __init__(self, size=4):
         self.size = size
         self.state = 0  # 起点在左上角(0,0)
